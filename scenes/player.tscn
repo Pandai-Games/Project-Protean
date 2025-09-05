@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://036kvdiabx0b"]
+
+[ext_resource type="Texture2D" uid="uid://o6x2hgpvmbgo" path="res://assets/char_a_p1/char_a_p1_0bas_humn_v00.png" id="1_3vyb7"]
+
+[node name="Player" type="Node3D"]
+
+[node name="PlayerBody3D" type="CharacterBody3D" parent="."]
+
+[node name="Sprite3D" type="Sprite3D" parent="PlayerBody3D"]
+offset = Vector2(0, 10)
+texture = ExtResource("1_3vyb7")
+hframes = 8
+vframes = 8
