@@ -17,7 +17,20 @@ A Godot 4.4 game project with automated CI/CD pipeline for building and deployin
 - Godot 4.4 or later
 - Git
 
-### Local Development
+### Quick Setup with Configuration Tool
+We provide a comprehensive configuration tool to help you get started quickly:
+
+1. **Download/Clone the repository** and navigate to the project directory
+2. **Run the configuration tool**:
+   - **GUI Version**: `protean-config-clean.bat` (Windows Forms interface)
+   - **CLI Version**: `protean-cli.bat` (Command-line interface)
+3. **Configure your settings**:
+   - Set your Godot 4.4 installation path
+   - Choose where to clone repositories
+   - Configure the repository URL
+4. **Clone and validate** the project automatically
+
+### Manual Development Setup
 1. Clone this repository:
    ```bash
    git clone https://github.com/Pandai-Games/Project-Protean.git
@@ -27,6 +40,9 @@ A Godot 4.4 game project with automated CI/CD pipeline for building and deployin
 2. Open Godot 4.4 and import the project by selecting the `project.godot` file.
 
 3. Start building your game!
+
+### Configuration Tools Documentation
+For detailed information about the configuration tools, see [`CONFIG-TOOL-README.md`](CONFIG-TOOL-README.md).
 
 ## 📁 Project Structure
 - `scenes/` — Godot scenes (.tscn files)
@@ -60,6 +76,12 @@ Download the latest builds from the [Releases](https://github.com/Pandai-Games/P
 
 ### Local Validation
 Before committing changes, validate your project locally:
+
+**Using Configuration Tool:**
+- Run `protean-cli.bat` and select option 5 (Validate Project)
+- Or use the GUI tool `protean-config-clean.bat` and click "Validate Project"
+
+**Manual Validation:**
 
 **Windows:**
 ```bash
