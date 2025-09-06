@@ -17,18 +17,30 @@ A Godot 4.4 game project with automated CI/CD pipeline for building and deployin
 - Godot 4.4 or later
 - Git
 
-### Quick Setup with Configuration Tool
-We provide a comprehensive configuration tool to help you get started quickly:
+### Streamlined Development Setup
+This project is pre-configured for seamless Godot + VS Code development:
 
-1. **Download/Clone the repository** and navigate to the project directory
-2. **Run the configuration tool**:
+1. **Clone this repository**:
+   ```bash
+   git clone https://github.com/Pandai-Games/Project-Protean.git
+   cd Project-Protean
+   ```
+
+2. **Open in VS Code** and start coding:
+   ```bash
+   code .
+   ```
+
+3. **That's it!** - Language Server auto-connects, auto-save enabled, full IntelliSense ready
+
+### Alternative: Configuration Tool Setup
+For advanced configuration or repository management:
+
+1. **Run the configuration tool**:
    - **GUI Version**: `protean-config.bat` (Windows Forms interface)
    - **CLI Version**: `protean-cli.bat` (Command-line interface)
-3. **Configure your settings**:
-   - Set your Godot 4.4 installation path
-   - Choose where to clone repositories
-   - Configure the repository URL
-4. **Clone and validate** the project automatically
+2. **Configure settings**: Godot path, clone directory, repository URL
+3. **Clone and validate** projects automatically
 
 ### Manual Development Setup
 1. Clone this repository:
@@ -74,14 +86,22 @@ Download the latest builds from the [Releases](https://github.com/Pandai-Games/P
 
 ## 🛠️ Development Workflow
 
-### Local Validation
-Before committing changes, validate your project locally:
+### Seamless Development
+With the streamlined setup, development is simplified:
 
-**Using Configuration Tool:**
-- Run `protean-cli.bat` and select option 5 (Validate Project)
-- Or use the GUI tool `protean-config.bat` and click "Validate Project"
+1. **Code in VS Code** - Full language support, auto-save, error detection
+2. **Test in Godot** - Run scenes directly, instant feedback
+3. **Debug easily** - F5 to attach debugger, breakpoints work seamlessly
+4. **Auto-validation** - CI/CD pipeline validates all commits automatically
 
-**Manual Validation:**
+### Optional: Manual Validation
+If you want to validate locally before committing:
+
+**Configuration Tool:**
+- Run `protean-cli.bat` → select "Validate Project"
+- Or use `protean-config.bat` → click "Validate Project"
+
+**Command Line:**
 
 **Windows:**
 ```bash
@@ -98,22 +118,24 @@ chmod +x validate.sh
 
 ## 💻 Development Environment
 
-### GDScript Development Setup
-This project is fully configured for GDScript development in VS Code with:
+### Streamlined GDScript Development
+This project features a seamless Godot + VS Code integration:
 
-- **Language Server Integration** - Full IDE features (auto-completion, debugging, etc.)
-- **Code Formatting & Linting** - Automatic code quality tools
-- **Debug Configuration** - Breakpoint debugging support
-- **Build Tasks** - One-click Godot operations
-- **Recommended Extensions** - Pre-configured extension pack
+- **Zero-Command Workflow** - No manual tasks or complex commands needed
+- **Auto-Integration** - Language Server connects automatically
+- **Auto-Save** - Changes saved automatically every second
+- **One-Click Debugging** - F5 to start debugging
+- **Full IntelliSense** - Auto-completion, error detection, navigation
 
-For detailed setup instructions, see [`GDSCRIPT-SETUP.md`](GDSCRIPT-SETUP.md)
+For the complete streamlined workflow guide, see [`STREAMLINED-WORKFLOW.md`](STREAMLINED-WORKFLOW.md)
 
-#### Quick Start Development
-1. Open VS Code in the project directory
-2. Install recommended extensions (prompt will appear)
-3. Run task: `Ctrl+Shift+P` → "Tasks: Run Task" → "Open Godot Editor"
-4. Start coding with full IDE support!
+#### Instant Development Start
+1. **Open VS Code** in the project directory
+2. **Edit any .gd file** - full IDE support loads automatically
+3. **Run in Godot** - test your changes directly in Godot
+4. **Debug** - press F5 to attach debugger
+
+No commands, no tasks, just pure development! 🚀
 
 ### Git Workflow
 1. **Create a feature branch**: `git checkout -b feature/new-feature`
