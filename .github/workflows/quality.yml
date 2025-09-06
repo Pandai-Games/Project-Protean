@@ -33,4 +33,4 @@ jobs:
       
       - name: Validate project
         run: |
-          godot --headless --check-only --verbose
+          godot --headless --check-only --verbose --path .

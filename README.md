@@ -58,12 +58,28 @@ Download the latest builds from the [Releases](https://github.com/Pandai-Games/P
 
 ## 🛠️ Development Workflow
 
+### Local Validation
+Before committing changes, validate your project locally:
+
+**Windows:**
+```bash
+./validate.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x validate.sh
+./validate.sh
+```
+
+### Git Workflow
 1. **Create a feature branch**: `git checkout -b feature/new-feature`
 2. **Make your changes** and commit them
-3. **Push to your branch**: `git push origin feature/new-feature` 
-4. **Create a Pull Request** to the `main` branch
-5. **CI/CD pipeline** will automatically build and test your changes
-6. **Merge** after review and successful builds
+3. **Validate locally** using the validation script
+4. **Push to your branch**: `git push origin feature/new-feature` 
+5. **Create a Pull Request** to the `main` branch
+6. **CI/CD pipeline** will automatically build and test your changes
+7. **Merge** after review and successful builds
 
 ## 📋 Export Settings
 
