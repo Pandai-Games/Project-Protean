@@ -1,7 +1,7 @@
-# MonCollector
+# Project Protean
 
-![Build Status](https://github.com/USERNAME/MonCollector/workflows/Build%20and%20Deploy%20Godot%20Game/badge.svg)
-![Code Quality](https://github.com/USERNAME/MonCollector/workflows/Code%20Quality/badge.svg)
+![Build Status](https://github.com/Pandai-Games/Project-Protean/workflows/Build%20and%20Deploy%20Godot%20Game/badge.svg)
+![Code Quality](https://github.com/Pandai-Games/Project-Protean/workflows/Code%20Quality/badge.svg)
 
 A Godot 4.4 game project with automated CI/CD pipeline for building and deploying across multiple platforms.
 
@@ -20,8 +20,8 @@ A Godot 4.4 game project with automated CI/CD pipeline for building and deployin
 ### Local Development
 1. Clone this repository:
    ```bash
-   git clone https://github.com/USERNAME/MonCollector.git
-   cd MonCollector
+   git clone https://github.com/Pandai-Games/Project-Protean.git
+   cd Project-Protean
    ```
 
 2. Open Godot 4.4 and import the project by selecting the `project.godot` file.
@@ -51,10 +51,10 @@ The project includes automated GitHub Actions workflows:
 - **Validation**: Ensures project integrity before builds
 
 ## 🌐 Web Demo
-Visit the live web demo: `https://USERNAME.github.io/MonCollector`
+Visit the live web demo: `https://Pandai-Games.github.io/Project-Protean`
 
 ## 📦 Downloads
-Download the latest builds from the [Releases](https://github.com/USERNAME/MonCollector/releases) page.
+Download the latest builds from the [Releases](https://github.com/Pandai-Games/Project-Protean/releases) page.
 
 ## 🛠️ Development Workflow
 
@@ -85,4 +85,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Note**: Replace `USERNAME` in the URLs with your actual GitHub username.
+**Note**: This is Project Protean by Pandai Games.
