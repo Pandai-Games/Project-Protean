@@ -33,7 +33,7 @@ A comprehensive GUI and CLI tool for managing Project Protean repository setting
 .\protean-config.bat
 
 # Run the CLI version
-.\protean-cli.ps1
+.\protean-cli.bat
 ```
 
 ### Build Standalone Executables
@@ -123,13 +123,14 @@ The tool automatically creates `protean-config.json` with your settings:
 ## 📁 File Structure
 
 ```
-├── protean-config.ps1      # Main GUI PowerShell script
-├── protean-config.bat      # GUI launcher batch file
-├── protean-cli.ps1         # CLI PowerShell script
-├── build-config-tool.bat   # Build script for executables
-├── protean-config.json     # Auto-generated configuration
-├── protean-config.exe      # Compiled GUI executable (after build)
-└── protean-cli.exe         # Compiled CLI executable (after build)
+├── protean-config.ps1        # Main GUI PowerShell script
+├── protean-config.bat        # GUI launcher batch file
+├── protean-cli.ps1           # CLI PowerShell script
+├── protean-cli.bat           # CLI launcher batch file
+├── build-config-tool.bat     # Build script for executables
+├── protean-config.json       # Auto-generated configuration
+├── protean-config.exe        # Compiled GUI executable (after build)
+└── protean-cli.exe           # Compiled CLI executable (after build)
 ```
 
 ## 🤝 Contributing

@@ -22,7 +22,7 @@ We provide a comprehensive configuration tool to help you get started quickly:
 
 1. **Download/Clone the repository** and navigate to the project directory
 2. **Run the configuration tool**:
-   - **GUI Version**: `protean-config-clean.bat` (Windows Forms interface)
+   - **GUI Version**: `protean-config.bat` (Windows Forms interface)
    - **CLI Version**: `protean-cli.bat` (Command-line interface)
 3. **Configure your settings**:
    - Set your Godot 4.4 installation path
@@ -79,7 +79,7 @@ Before committing changes, validate your project locally:
 
 **Using Configuration Tool:**
 - Run `protean-cli.bat` and select option 5 (Validate Project)
-- Or use the GUI tool `protean-config-clean.bat` and click "Validate Project"
+- Or use the GUI tool `protean-config.bat` and click "Validate Project"
 
 **Manual Validation:**
 

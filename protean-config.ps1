@@ -1,72 +1,106 @@
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
 # Load required assemblies for Windows Forms
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 # Project Protean Configuration Tool
-# Author: Pandai Games
-# Description: Configure repository settings, Godot path, and clone/import repositories
+# A comprehensive GUI tool for managing Godot projects and repositories
 
 class ConfigManager {
-    [string]$ConfigFile = "protean-config.json"
+    [string]$ConfigPath
     [hashtable]$Settings
     
-    ConfigManager() {
+    ConfigManager([string]$configPath) {
+        $this.ConfigPath = $configPath
         $this.LoadConfig()
     }
     
     [void]LoadConfig() {
-        if (Test-Path $this.ConfigFile) {
+        if (Test-Path $this.ConfigPath) {
             try {
-                $json = Get-Content $this.ConfigFile -Raw | ConvertFrom-Json
-                $this.Settings = @{
-                    GodotPath = $json.GodotPath
-                    DefaultClonePath = $json.DefaultClonePath
-                    LastRepository = $json.LastRepository
-                    AutoValidate = $json.AutoValidate
+                $content = Get-Content $this.ConfigPath -Raw | ConvertFrom-Json
+                $this.Settings = @{}
+                $content.PSObject.Properties | ForEach-Object {
+                    $this.Settings[$_.Name] = $_.Value
                 }
-            } catch {
-                $this.Settings = $this.GetDefaultSettings()
             }
-        } else {
-            $this.Settings = $this.GetDefaultSettings()
+            catch {
+                Write-Host "Error loading config: $($_.Exception.Message)"
+                $this.SetDefaults()
+            }
+        }
+        else {
+            $this.SetDefaults()
         }
     }
     
-    [hashtable]GetDefaultSettings() {
-        return @{
+    [void]SetDefaults() {
+        $this.Settings = @{
             GodotPath = "E:\Godot\Godot_v4.4-stable_win64.exe"
-            DefaultClonePath = "$env:USERPROFILE\Documents\GameProjects"
+            DefaultClonePath = [Environment]::GetFolderPath("MyDocuments") + "\GameProjects"
             LastRepository = "https://github.com/Pandai-Games/Project-Protean.git"
             AutoValidate = $true
         }
     }
     
     [void]SaveConfig() {
-        $json = $this.Settings | ConvertTo-Json -Depth 3
-        $json | Out-File -FilePath $this.ConfigFile -Encoding UTF8
+        try {
+            $this.Settings | ConvertTo-Json -Depth 10 | Set-Content $this.ConfigPath -Encoding UTF8
+            Write-Host "Configuration saved to: $($this.ConfigPath)"
+        }
+        catch {
+            Write-Host "Error saving config: $($_.Exception.Message)"
+        }
     }
     
-    [bool]ValidateGodotPath([string]$path) {
-        return (Test-Path $path) -and ($path -like "*Godot*" -or $path -like "*godot*")
+    [string]Get([string]$key) {
+        return $this.Settings[$key]
+    }
+    
+    [void]Set([string]$key, [string]$value) {
+        $this.Settings[$key] = $value
     }
 }
 
 class RepositoryManager {
-    [string]$WorkingDirectory
+    [ConfigManager]$Config
     
-    RepositoryManager([string]$workingDir) {
-        $this.WorkingDirectory = $workingDir
+    RepositoryManager([ConfigManager]$config) {
+        $this.Config = $config
+    }
+    
+    [bool]ValidateGodotPath([string]$path) {
+        if (-not (Test-Path $path)) {
+            return $false
+        }
+        
+        try {
+            $versionOutput = & $path --version 2>&1
+            return $versionOutput -match "Godot Engine"
+        }
+        catch {
+            return $false
+        }
+    }
+    
+    [string]GetGodotVersion([string]$path) {
+        try {
+            $versionOutput = & $path --version 2>&1
+            if ($versionOutput -match "Godot Engine v(.+)") {
+                return $matches[1]
+            }
+        }
+        catch {
+            return "Unknown"
+        }
+        return "Unknown"
     }
     
     [bool]CloneRepository([string]$repoUrl, [string]$targetPath) {
         try {
             if (Test-Path $targetPath) {
                 $result = [System.Windows.Forms.MessageBox]::Show(
-                    "Directory already exists. Do you want to continue anyway?", 
-                    "Directory Exists", 
+                    "Directory '$targetPath' already exists. Do you want to continue?",
+                    "Directory Exists",
                     [System.Windows.Forms.MessageBoxButtons]::YesNo,
                     [System.Windows.Forms.MessageBoxIcon]::Question
                 )
@@ -75,305 +109,281 @@ class RepositoryManager {
                 }
             }
             
-            $process = Start-Process -FilePath "git" -ArgumentList "clone", $repoUrl, $targetPath -Wait -PassThru -WindowStyle Hidden
-            return $process.ExitCode -eq 0
-        } catch {
+            $parentPath = Split-Path $targetPath -Parent
+            if (-not (Test-Path $parentPath)) {
+                New-Item -ItemType Directory -Path $parentPath -Force | Out-Null
+            }
+            
+            $gitOutput = & git clone $repoUrl $targetPath 2>&1
+            return $LASTEXITCODE -eq 0
+        }
+        catch {
+            Write-Host "Error cloning repository: $($_.Exception.Message)"
             return $false
         }
     }
     
-    [bool]ValidateRepository([string]$path, [string]$godotPath) {
-        $projectFile = Join-Path $path "project.godot"
+    [bool]ValidateProject([string]$projectPath, [string]$godotPath) {
+        $projectFile = Join-Path $projectPath "project.godot"
         if (-not (Test-Path $projectFile)) {
             return $false
         }
         
         try {
-            $process = Start-Process -FilePath $godotPath -ArgumentList "--headless", "--editor", "--quit", "--path", $path -Wait -PassThru -WindowStyle Hidden
-            return $process.ExitCode -eq 0
-        } catch {
+            # Use Godot to validate the project
+            $validateOutput = & $godotPath --path $projectPath --editor --quit 2>&1
+            return $LASTEXITCODE -eq 0
+        }
+        catch {
+            Write-Host "Error validating project: $($_.Exception.Message)"
             return $false
         }
     }
 }
 
-# Create the main form
+# Initialize managers
+$configPath = Join-Path $PSScriptRoot "protean-config.json"
+$configManager = [ConfigManager]::new($configPath)
+$repoManager = [RepositoryManager]::new($configManager)
+
+# Create main form
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Project Protean - Configuration Tool"
+$form.Text = "Project Protean Configuration Tool"
 $form.Size = New-Object System.Drawing.Size(600, 500)
 $form.StartPosition = "CenterScreen"
-$form.FormBorderStyle = "FixedSingle"
+$form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
-
-# Initialize managers
-$configManager = [ConfigManager]::new()
-$repoManager = [RepositoryManager]::new((Get-Location).Path)
-
-# Title Label
-$titleLabel = New-Object System.Windows.Forms.Label
-$titleLabel.Text = "🎮 Project Protean Configuration"
-$titleLabel.Size = New-Object System.Drawing.Size(550, 30)
-$titleLabel.Location = New-Object System.Drawing.Point(25, 20)
-$titleLabel.Font = New-Object System.Drawing.Font("Arial", 16, [System.Drawing.FontStyle]::Bold)
-$titleLabel.ForeColor = [System.Drawing.Color]::DarkBlue
-$form.Controls.Add($titleLabel)
 
 # Godot Path Section
 $godotLabel = New-Object System.Windows.Forms.Label
 $godotLabel.Text = "Godot Engine Path:"
+$godotLabel.Location = New-Object System.Drawing.Point(20, 20)
 $godotLabel.Size = New-Object System.Drawing.Size(150, 20)
-$godotLabel.Location = New-Object System.Drawing.Point(25, 70)
 $form.Controls.Add($godotLabel)
 
 $godotPathTextBox = New-Object System.Windows.Forms.TextBox
-$godotPathTextBox.Size = New-Object System.Drawing.Size(350, 20)
-$godotPathTextBox.Location = New-Object System.Drawing.Point(25, 95)
-$godotPathTextBox.Text = $configManager.Settings.GodotPath
+$godotPathTextBox.Location = New-Object System.Drawing.Point(20, 45)
+$godotPathTextBox.Size = New-Object System.Drawing.Size(400, 25)
+$godotPathTextBox.Text = $configManager.Get("GodotPath")
 $form.Controls.Add($godotPathTextBox)
 
-$browseDotButton = New-Object System.Windows.Forms.Button
-$browseDotButton.Text = "Browse..."
-$browseDotButton.Size = New-Object System.Drawing.Size(80, 25)
-$browseDotButton.Location = New-Object System.Drawing.Point(385, 93)
-$form.Controls.Add($browseDotButton)
+$browseGodotButton = New-Object System.Windows.Forms.Button
+$browseGodotButton.Text = "Browse"
+$browseGodotButton.Location = New-Object System.Drawing.Point(430, 43)
+$browseGodotButton.Size = New-Object System.Drawing.Size(80, 28)
+$form.Controls.Add($browseGodotButton)
 
-$validateGodotButton = New-Object System.Windows.Forms.Button
-$validateGodotButton.Text = "Test"
-$validateGodotButton.Size = New-Object System.Drawing.Size(60, 25)
-$validateGodotButton.Location = New-Object System.Drawing.Point(475, 93)
-$form.Controls.Add($validateGodotButton)
+$testGodotButton = New-Object System.Windows.Forms.Button
+$testGodotButton.Text = "Test"
+$testGodotButton.Location = New-Object System.Drawing.Point(520, 43)
+$testGodotButton.Size = New-Object System.Drawing.Size(50, 28)
+$form.Controls.Add($testGodotButton)
 
-# Default Clone Path Section
+# Clone Path Section
 $cloneLabel = New-Object System.Windows.Forms.Label
 $cloneLabel.Text = "Default Clone Directory:"
+$cloneLabel.Location = New-Object System.Drawing.Point(20, 90)
 $cloneLabel.Size = New-Object System.Drawing.Size(150, 20)
-$cloneLabel.Location = New-Object System.Drawing.Point(25, 135)
 $form.Controls.Add($cloneLabel)
 
 $clonePathTextBox = New-Object System.Windows.Forms.TextBox
-$clonePathTextBox.Size = New-Object System.Drawing.Size(350, 20)
-$clonePathTextBox.Location = New-Object System.Drawing.Point(25, 160)
-$clonePathTextBox.Text = $configManager.Settings.DefaultClonePath
+$clonePathTextBox.Location = New-Object System.Drawing.Point(20, 115)
+$clonePathTextBox.Size = New-Object System.Drawing.Size(400, 25)
+$clonePathTextBox.Text = $configManager.Get("DefaultClonePath")
 $form.Controls.Add($clonePathTextBox)
 
 $browseCloneButton = New-Object System.Windows.Forms.Button
-$browseCloneButton.Text = "Browse..."
-$browseCloneButton.Size = New-Object System.Drawing.Size(80, 25)
-$browseCloneButton.Location = New-Object System.Drawing.Point(385, 158)
+$browseCloneButton.Text = "Browse"
+$browseCloneButton.Location = New-Object System.Drawing.Point(430, 113)
+$browseCloneButton.Size = New-Object System.Drawing.Size(80, 28)
 $form.Controls.Add($browseCloneButton)
 
 # Repository Section
 $repoLabel = New-Object System.Windows.Forms.Label
 $repoLabel.Text = "Repository URL:"
+$repoLabel.Location = New-Object System.Drawing.Point(20, 160)
 $repoLabel.Size = New-Object System.Drawing.Size(150, 20)
-$repoLabel.Location = New-Object System.Drawing.Point(25, 200)
 $form.Controls.Add($repoLabel)
 
 $repoUrlTextBox = New-Object System.Windows.Forms.TextBox
-$repoUrlTextBox.Size = New-Object System.Drawing.Size(430, 20)
-$repoUrlTextBox.Location = New-Object System.Drawing.Point(25, 225)
-$repoUrlTextBox.Text = $configManager.Settings.LastRepository
+$repoUrlTextBox.Location = New-Object System.Drawing.Point(20, 185)
+$repoUrlTextBox.Size = New-Object System.Drawing.Size(550, 25)
+$repoUrlTextBox.Text = $configManager.Get("LastRepository")
 $form.Controls.Add($repoUrlTextBox)
-
-# Project Name
-$projectLabel = New-Object System.Windows.Forms.Label
-$projectLabel.Text = "Project Name:"
-$projectLabel.Size = New-Object System.Drawing.Size(150, 20)
-$projectLabel.Location = New-Object System.Drawing.Point(25, 265)
-$form.Controls.Add($projectLabel)
-
-$projectNameTextBox = New-Object System.Windows.Forms.TextBox
-$projectNameTextBox.Size = New-Object System.Drawing.Size(200, 20)
-$projectNameTextBox.Location = New-Object System.Drawing.Point(25, 290)
-$projectNameTextBox.Text = "Project-Protean"
-$form.Controls.Add($projectNameTextBox)
-
-# Auto-validate checkbox
-$autoValidateCheckBox = New-Object System.Windows.Forms.CheckBox
-$autoValidateCheckBox.Text = "Auto-validate after clone"
-$autoValidateCheckBox.Size = New-Object System.Drawing.Size(200, 20)
-$autoValidateCheckBox.Location = New-Object System.Drawing.Point(255, 290)
-$autoValidateCheckBox.Checked = $configManager.Settings.AutoValidate
-$form.Controls.Add($autoValidateCheckBox)
 
 # Action Buttons
 $cloneButton = New-Object System.Windows.Forms.Button
-$cloneButton.Text = "🔄 Clone Repository"
+$cloneButton.Text = "Clone Repository"
+$cloneButton.Location = New-Object System.Drawing.Point(20, 230)
 $cloneButton.Size = New-Object System.Drawing.Size(120, 35)
-$cloneButton.Location = New-Object System.Drawing.Point(25, 330)
 $cloneButton.BackColor = [System.Drawing.Color]::LightGreen
 $form.Controls.Add($cloneButton)
 
 $validateButton = New-Object System.Windows.Forms.Button
-$validateButton.Text = "✅ Validate Project"
+$validateButton.Text = "Validate Project"
+$validateButton.Location = New-Object System.Drawing.Point(150, 230)
 $validateButton.Size = New-Object System.Drawing.Size(120, 35)
-$validateButton.Location = New-Object System.Drawing.Point(155, 330)
-$validateButton.BackColor = [System.Drawing.Color]::LightBlue
 $form.Controls.Add($validateButton)
 
 $openFolderButton = New-Object System.Windows.Forms.Button
-        $openFolderButton.Text = "Open Folder"
+$openFolderButton.Text = "Open Folder"
+$openFolderButton.Location = New-Object System.Drawing.Point(280, 230)
 $openFolderButton.Size = New-Object System.Drawing.Size(120, 35)
-$openFolderButton.Location = New-Object System.Drawing.Point(285, 330)
-$openFolderButton.BackColor = [System.Drawing.Color]::LightYellow
 $form.Controls.Add($openFolderButton)
 
+# Configuration Buttons
 $saveConfigButton = New-Object System.Windows.Forms.Button
-$saveConfigButton.Text = "💾 Save Config"
+$saveConfigButton.Text = "Save Config"
+$saveConfigButton.Location = New-Object System.Drawing.Point(450, 230)
 $saveConfigButton.Size = New-Object System.Drawing.Size(120, 35)
-$saveConfigButton.Location = New-Object System.Drawing.Point(415, 330)
-$saveConfigButton.BackColor = [System.Drawing.Color]::LightCoral
+$saveConfigButton.BackColor = [System.Drawing.Color]::LightBlue
 $form.Controls.Add($saveConfigButton)
+
+# Auto-validate checkbox
+$autoValidateCheckBox = New-Object System.Windows.Forms.CheckBox
+$autoValidateCheckBox.Text = "Auto-validate after clone"
+$autoValidateCheckBox.Location = New-Object System.Drawing.Point(20, 280)
+$autoValidateCheckBox.Size = New-Object System.Drawing.Size(200, 25)
+$autoValidateCheckBox.Checked = [bool]$configManager.Get("AutoValidate")
+$form.Controls.Add($autoValidateCheckBox)
 
 # Status Label
 $statusLabel = New-Object System.Windows.Forms.Label
-$statusLabel.Text = "Ready"
-$statusLabel.Size = New-Object System.Drawing.Size(550, 20)
-$statusLabel.Location = New-Object System.Drawing.Point(25, 380)
-$statusLabel.ForeColor = [System.Drawing.Color]::DarkGreen
+$statusLabel.Text = "Ready - Configure your Godot project settings"
+$statusLabel.Location = New-Object System.Drawing.Point(20, 320)
+$statusLabel.Size = New-Object System.Drawing.Size(550, 40)
+$statusLabel.BackColor = [System.Drawing.Color]::LightGray
+$statusLabel.BorderStyle = "FixedSingle"
+$statusLabel.TextAlign = "MiddleLeft"
 $form.Controls.Add($statusLabel)
 
-# Progress Bar
-$progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Size = New-Object System.Drawing.Size(550, 20)
-$progressBar.Location = New-Object System.Drawing.Point(25, 405)
-$progressBar.Style = "Continuous"
-$form.Controls.Add($progressBar)
-
 # Event Handlers
-$browseDotButton.Add_Click({
+$browseGodotButton.Add_Click({
     $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
-    $openFileDialog.Filter = "Godot Executable (*.exe)|*.exe|All Files (*.*)|*.*"
-    $openFileDialog.Title = "Select Godot Executable"
-    $openFileDialog.InitialDirectory = Split-Path $godotPathTextBox.Text -Parent
+    $openFileDialog.Filter = "Godot Engine (*.exe)|*.exe|All files (*.*)|*.*"
+    $openFileDialog.Title = "Select Godot Engine Executable"
+    $openFileDialog.InitialDirectory = "C:\"
     
-    if ($openFileDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    if ($openFileDialog.ShowDialog() -eq "OK") {
         $godotPathTextBox.Text = $openFileDialog.FileName
     }
 })
 
 $browseCloneButton.Add_Click({
-    $folderBrowserDialog = New-Object System.Windows.Forms.FolderBrowserDialog
-    $folderBrowserDialog.Description = "Select Default Clone Directory"
-    $folderBrowserDialog.SelectedPath = $clonePathTextBox.Text
+    $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
+    $folderBrowser.Description = "Select Default Clone Directory"
+    $folderBrowser.SelectedPath = $clonePathTextBox.Text
     
-    if ($folderBrowserDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-        $clonePathTextBox.Text = $folderBrowserDialog.SelectedPath
+    if ($folderBrowser.ShowDialog() -eq "OK") {
+        $clonePathTextBox.Text = $folderBrowser.SelectedPath
     }
 })
 
-$validateGodotButton.Add_Click({
-    $statusLabel.Text = "Testing Godot installation..."
-    $statusLabel.ForeColor = [System.Drawing.Color]::Orange
-    $form.Refresh()
-    
-    if ($configManager.ValidateGodotPath($godotPathTextBox.Text)) {
-        try {
-            $process = Start-Process -FilePath $godotPathTextBox.Text -ArgumentList "--version" -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput "temp_version.txt"
-            $version = Get-Content "temp_version.txt" -ErrorAction SilentlyContinue
-            Remove-Item "temp_version.txt" -ErrorAction SilentlyContinue
-            
-            $statusLabel.Text = "✅ Godot validated: $version"
-            $statusLabel.ForeColor = [System.Drawing.Color]::DarkGreen
-        } catch {
-            $statusLabel.Text = "⚠️ Godot path exists but version check failed"
-            $statusLabel.ForeColor = [System.Drawing.Color]::Orange
+$testGodotButton.Add_Click({
+    $godotPath = $godotPathTextBox.Text
+    if ($repoManager.ValidateGodotPath($godotPath)) {
+        $version = $repoManager.GetGodotVersion($godotPath)
+        if ($version -ne "Unknown") {
+            $statusLabel.Text = "Godot validated: $version"
+            $statusLabel.BackColor = [System.Drawing.Color]::LightGreen
+        } else {
+            $statusLabel.Text = "Godot found but version unknown"
+            $statusLabel.BackColor = [System.Drawing.Color]::LightYellow
         }
     } else {
-        $statusLabel.Text = "❌ Invalid Godot path"
-        $statusLabel.ForeColor = [System.Drawing.Color]::Red
+        $statusLabel.Text = "Invalid Godot path"
+        $statusLabel.BackColor = [System.Drawing.Color]::LightCoral
     }
 })
 
 $cloneButton.Add_Click({
-    $repoUrl = $repoUrlTextBox.Text.Trim()
-    $projectName = $projectNameTextBox.Text.Trim()
-    $targetPath = Join-Path $clonePathTextBox.Text $projectName
-    
-    if ([string]::IsNullOrEmpty($repoUrl) -or [string]::IsNullOrEmpty($projectName)) {
-        [System.Windows.Forms.MessageBox]::Show("Please fill in repository URL and project name.", "Missing Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-        return
-    }
+    $repoUrl = $repoUrlTextBox.Text
+    $clonePath = $clonePathTextBox.Text
+    $repoName = Split-Path $repoUrl -Leaf
+    $repoName = $repoName -replace "\.git$", ""
+    $targetPath = Join-Path $clonePath $repoName
     
     $statusLabel.Text = "Cloning repository..."
-    $statusLabel.ForeColor = [System.Drawing.Color]::Orange
-    $progressBar.Style = "Marquee"
+    $statusLabel.BackColor = [System.Drawing.Color]::LightYellow
     $form.Refresh()
     
     if ($repoManager.CloneRepository($repoUrl, $targetPath)) {
-        $statusLabel.Text = "✅ Repository cloned successfully to: $targetPath"
-        $statusLabel.ForeColor = [System.Drawing.Color]::DarkGreen
+        $statusLabel.Text = "Repository cloned successfully to: $targetPath"
+        $statusLabel.BackColor = [System.Drawing.Color]::LightGreen
         
+        # Auto-validate if enabled
         if ($autoValidateCheckBox.Checked) {
-            $statusLabel.Text += " | Validating..."
+            $statusLabel.Text = "Validating cloned project..."
             $form.Refresh()
             
-            if ($repoManager.ValidateRepository($targetPath, $godotPathTextBox.Text)) {
-                $statusLabel.Text = "✅ Repository cloned and validated successfully!"
+            if ($repoManager.ValidateProject($targetPath, $godotPathTextBox.Text)) {
+                $statusLabel.Text = "Repository cloned and validated successfully!"
+                $statusLabel.BackColor = [System.Drawing.Color]::LightGreen
             } else {
-                $statusLabel.Text += " | ⚠️ Validation failed"
-                $statusLabel.ForeColor = [System.Drawing.Color]::Orange
+                $statusLabel.Text = "Repository cloned but validation failed"
+                $statusLabel.BackColor = [System.Drawing.Color]::LightYellow
             }
         }
     } else {
-        $statusLabel.Text = "❌ Failed to clone repository"
-        $statusLabel.ForeColor = [System.Drawing.Color]::Red
+        $statusLabel.Text = "Failed to clone repository"
+        $statusLabel.BackColor = [System.Drawing.Color]::LightCoral
     }
-    
-    $progressBar.Style = "Continuous"
 })
 
 $validateButton.Add_Click({
-    $currentPath = Join-Path $clonePathTextBox.Text $projectNameTextBox.Text
+    $repoUrl = $repoUrlTextBox.Text
+    $clonePath = $clonePathTextBox.Text
+    $repoName = Split-Path $repoUrl -Leaf
+    $repoName = $repoName -replace "\.git$", ""
+    $targetPath = Join-Path $clonePath $repoName
     
-    if (-not (Test-Path $currentPath)) {
-        $currentPath = (Get-Location).Path
-    }
-    
-    $statusLabel.Text = "Validating project at: $currentPath"
-    $statusLabel.ForeColor = [System.Drawing.Color]::Orange
+    $statusLabel.Text = "Validating project..."
+    $statusLabel.BackColor = [System.Drawing.Color]::LightYellow
     $form.Refresh()
     
-    if ($repoManager.ValidateRepository($currentPath, $godotPathTextBox.Text)) {
-        $statusLabel.Text = "✅ Project validation successful!"
-        $statusLabel.ForeColor = [System.Drawing.Color]::DarkGreen
+    if ($repoManager.ValidateProject($targetPath, $godotPathTextBox.Text)) {
+        $statusLabel.Text = "Project validation successful!"
+        $statusLabel.BackColor = [System.Drawing.Color]::LightGreen
     } else {
-        $statusLabel.Text = "❌ Project validation failed"
-        $statusLabel.ForeColor = [System.Drawing.Color]::Red
+        $statusLabel.Text = "Project validation failed"
+        $statusLabel.BackColor = [System.Drawing.Color]::LightCoral
     }
 })
 
 $openFolderButton.Add_Click({
-    $targetPath = Join-Path $clonePathTextBox.Text $projectNameTextBox.Text
+    $repoUrl = $repoUrlTextBox.Text
+    $clonePath = $clonePathTextBox.Text
+    $repoName = Split-Path $repoUrl -Leaf
+    $repoName = $repoName -replace "\.git$", ""
+    $targetPath = Join-Path $clonePath $repoName
     
     if (Test-Path $targetPath) {
-        Start-Process -FilePath "explorer.exe" -ArgumentList $targetPath
-        $statusLabel.Text = "📁 Opened folder: $targetPath"
-        $statusLabel.ForeColor = [System.Drawing.Color]::DarkBlue
+        Start-Process "explorer.exe" -ArgumentList $targetPath
+        $statusLabel.Text = "Opened folder: $targetPath"
+        $statusLabel.BackColor = [System.Drawing.Color]::LightBlue
     } else {
-        if (Test-Path $clonePathTextBox.Text) {
-            Start-Process -FilePath "explorer.exe" -ArgumentList $clonePathTextBox.Text
-            $statusLabel.Text = "📁 Opened parent folder: $($clonePathTextBox.Text)"
-            $statusLabel.ForeColor = [System.Drawing.Color]::DarkBlue
+        if (Test-Path $clonePath) {
+            Start-Process "explorer.exe" -ArgumentList $clonePath
+            $statusLabel.Text = "Opened parent folder: $($clonePathTextBox.Text)"
+            $statusLabel.BackColor = [System.Drawing.Color]::LightBlue
         } else {
-            $statusLabel.Text = "❌ Folder not found"
-            $statusLabel.ForeColor = [System.Drawing.Color]::Red
+            $statusLabel.Text = "Folder not found"
+            $statusLabel.BackColor = [System.Drawing.Color]::LightCoral
         }
     }
 })
 
 $saveConfigButton.Add_Click({
-    $configManager.Settings.GodotPath = $godotPathTextBox.Text
-    $configManager.Settings.DefaultClonePath = $clonePathTextBox.Text
-    $configManager.Settings.LastRepository = $repoUrlTextBox.Text
-    $configManager.Settings.AutoValidate = $autoValidateCheckBox.Checked
-    
+    $configManager.Set("GodotPath", $godotPathTextBox.Text)
+    $configManager.Set("DefaultClonePath", $clonePathTextBox.Text)
+    $configManager.Set("LastRepository", $repoUrlTextBox.Text)
+    $configManager.Set("AutoValidate", $autoValidateCheckBox.Checked)
     $configManager.SaveConfig()
     
     $statusLabel.Text = "Configuration saved successfully!"
-    $statusLabel.ForeColor = [System.Drawing.Color]::DarkGreen
+    $statusLabel.BackColor = [System.Drawing.Color]::LightGreen
 })
 
 # Show the form
-[System.Windows.Forms.Application]::EnableVisualStyles()
+Write-Host "Starting Project Protean Configuration Tool..."
 $form.ShowDialog() | Out-Null
