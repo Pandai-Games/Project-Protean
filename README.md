@@ -65,12 +65,14 @@ Before committing changes, validate your project locally:
 ```bash
 ./validate.bat
 ```
+*Uses Godot installation at: `E:\Godot\Godot_v4.4-stable_win64.exe`*
 
 **Linux/Mac:**
 ```bash
 chmod +x validate.sh
 ./validate.sh
 ```
+*Requires Godot to be in system PATH*
 
 ### Git Workflow
 1. **Create a feature branch**: `git checkout -b feature/new-feature`
