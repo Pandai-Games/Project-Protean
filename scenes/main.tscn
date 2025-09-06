@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://d1qqsd4w0eeew"]
+
+[ext_resource type="PackedScene" uid="uid://b1ywspy66nw83" path="res://scenes/Map_Proc.tscn" id="1_o5qli"]
+
+[node name="Main" type="Node"]
+
+[node name="Arena" type="Node2D" parent="."]
+
+[node name="Map" parent="Arena" instance=ExtResource("1_o5qli")]
+
+[node name="Camera2D" type="Camera2D" parent="."]

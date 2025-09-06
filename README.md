@@ -96,6 +96,25 @@ chmod +x validate.sh
 ```
 *Requires Godot to be in system PATH*
 
+## 💻 Development Environment
+
+### GDScript Development Setup
+This project is fully configured for GDScript development in VS Code with:
+
+- **Language Server Integration** - Full IDE features (auto-completion, debugging, etc.)
+- **Code Formatting & Linting** - Automatic code quality tools
+- **Debug Configuration** - Breakpoint debugging support
+- **Build Tasks** - One-click Godot operations
+- **Recommended Extensions** - Pre-configured extension pack
+
+For detailed setup instructions, see [`GDSCRIPT-SETUP.md`](GDSCRIPT-SETUP.md)
+
+#### Quick Start Development
+1. Open VS Code in the project directory
+2. Install recommended extensions (prompt will appear)
+3. Run task: `Ctrl+Shift+P` → "Tasks: Run Task" → "Open Godot Editor"
+4. Start coding with full IDE support!
+
 ### Git Workflow
 1. **Create a feature branch**: `git checkout -b feature/new-feature`
 2. **Make your changes** and commit them

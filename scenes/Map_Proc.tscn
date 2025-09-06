@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://b1ywspy66nw83"]
+
+[ext_resource type="Script" uid="uid://bewulx0kl2qrt" path="res://scenes/map_proc.gd" id="1_1c11h"]
+[ext_resource type="TileSet" uid="uid://v8q4yiy0lp5p" path="res://tiles/TileSet.tres" id="1_vgtp3"]
+
+[node name="Map" type="Node2D"]
+y_sort_enabled = true
+script = ExtResource("1_1c11h")
+
+[node name="Tilemap" type="Node2D" parent="."]
+
+[node name="TileMapLayer" type="TileMapLayer" parent="Tilemap"]
+y_sort_enabled = true
+tile_set = ExtResource("1_vgtp3")
